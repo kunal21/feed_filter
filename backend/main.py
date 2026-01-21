@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+from contextlib import asynccontextmanager
 
 # Load environment variables
 load_dotenv()
@@ -25,17 +26,6 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 USE_OPENAI = os.getenv("USE_OPENAI", "false").lower() == "true"
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
-
-app = FastAPI(title="Feed Filter API")
-
-# CORS for extension and dashboard
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Paths
 BASE_DIR = Path(__file__).parent
@@ -82,9 +72,27 @@ async def init_db():
         await db.commit()
 
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     await init_db()
+    yield
+
+app = FastAPI(title="Feed Filter API", lifespan=lifespan)
+
+# CORS for extension and dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "feed_filter"}
 
 
 @app.post("/upload")
