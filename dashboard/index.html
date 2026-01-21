@@ -484,7 +484,10 @@
   </div>
 
   <script>
-    const API_URL = 'http://localhost:8000';
+    // Use Railway URL in production, localhost for development
+    const API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:8000'
+      : 'https://feedfilter-production.up.railway.app';
     let currentOffset = 0;
     let currentFilter = 'all';
     let currentSearch = '';
