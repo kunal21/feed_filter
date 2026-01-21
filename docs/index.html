@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feed Filter - Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #2a2a3a;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #fff;
+    }
+
+    .stats {
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    .stats span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stats strong {
+      color: #0077b5;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px;
+      padding-left: 44px;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #0077b5;
+    }
+
+    .search-box::before {
+      content: "🔍";
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #2a2a3a;
+    }
+
+    button.active {
+      background: #0077b5;
+      border-color: #0077b5;
+      color: #fff;
+    }
+
+    button.chat-btn {
+      background: #10a37f;
+      border-color: #10a37f;
+    }
+
+    button.chat-btn:hover {
+      background: #0d8a6a;
+    }
+
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 20px;
+    }
+
+    .post-card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a3a;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .post-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .post-image {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .post-content {
+      padding: 16px;
+    }
+
+    .post-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .post-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #2a2a3a;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .post-actions button {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .post-actions button.bookmarked {
+      background: #ffc107;
+      border-color: #ffc107;
+      color: #000;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #888;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 32px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .error-banner {
+      background: #4a1a1a;
+      border: 1px solid #e74c3c;
+      color: #e74c3c;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-banner.active {
+      display: block;
+    }
+
+    .load-more {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin: 40px auto;
+      padding: 14px;
+    }
+
+    /* Chat Panel Styles */
+    .chat-panel {
+      display: none;
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 400px;
+      height: 100vh;
+      background: #1a1a2e;
+      border-left: 1px solid #2a2a3a;
+      z-index: 999;
+      flex-direction: column;
+    }
+
+    .chat-panel.active {
+      display: flex;
+    }
+
+    .chat-header {
+      padding: 16px;
+      border-bottom: 1px solid #2a2a3a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-header h2 {
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .chat-close {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .chat-close:hover {
+      color: #fff;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-message {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .chat-message.user {
+      background: #0077b5;
+      align-self: flex-end;
+      max-width: 85%;
+    }
+
+    .chat-message.assistant {
+      background: #2d2d44;
+      align-self: flex-start;
+      max-width: 90%;
+    }
+
+    .chat-message.system {
+      background: #3d3d1a;
+      font-size: 12px;
+      text-align: center;
+      align-self: center;
+    }
+
+    .chat-message.error {
+      background: #4a1a1a;
+      color: #e74c3c;
+    }
+
+    .chat-input-area {
+      padding: 16px;
+      border-top: 1px solid #2a2a3a;
+    }
+
+    .chat-suggestions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .chat-suggestion {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #2d2d44;
+      border: 1px solid #3d3d54;
+      border-radius: 16px;
+      color: #aaa;
+      cursor: pointer;
+    }
+
+    .chat-suggestion:hover {
+      background: #3d3d54;
+      color: #fff;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      background: #0f0f1a;
+      color: #fff;
+      font-size: 14px;
+      resize: none;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #0077b5;
+    }
+
+    .chat-send {
+      padding: 12px 20px;
+      background: #10a37f;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .chat-send:hover {
+      background: #0d8a6a;
+    }
+
+    .chat-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Adjust main content when chat is open */
+    body.chat-open .container {
+      margin-right: 400px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Feed Filter</h1>
+      <div class="stats">
+        <span>Posts: <strong id="totalPosts">0</strong></span>
+        <span>Bookmarked: <strong id="bookmarkedCount">0</strong></span>
+        <span>Processing: <strong id="processingCount">0</strong></span>
+      </div>
+    </header>
+
+    <div id="errorBanner" class="error-banner"></div>
+
+    <div class="controls">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search posts... (press Enter for text search)">
+      </div>
+      <div class="filter-buttons">
+        <button id="allBtn" class="active">All</button>
+        <button id="bookmarkedBtn">Bookmarked</button>
+        <button id="chatBtn" class="chat-btn">💬 AI Chat</button>
+      </div>
+    </div>
+
+    <div id="postsGrid" class="posts-grid">
+      <div class="loading">Loading posts...</div>
+    </div>
+
+    <button id="loadMoreBtn" class="load-more" style="display: none;">Load More</button>
+  </div>
+
+  <div id="imageModal" class="modal">
+    <span class="modal-close">&times;</span>
+    <img id="modalImage" src="" alt="Full size">
+  </div>
+
+  <!-- Chat Panel -->
+  <div id="chatPanel" class="chat-panel">
+    <div class="chat-header">
+      <h2>AI Assistant</h2>
+      <button class="chat-close" id="chatClose">&times;</button>
+    </div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-message system">Ask questions about your captured LinkedIn posts. I can summarize, find trends, or answer specific questions.</div>
+    </div>
+    <div class="chat-input-area">
+      <div class="chat-suggestions">
+        <button class="chat-suggestion" data-prompt="Summarize all the posts I've captured">Summarize all</button>
+        <button class="chat-suggestion" data-prompt="What are the main topics being discussed?">Main topics</button>
+        <button class="chat-suggestion" data-prompt="Find any job postings or hiring announcements">Find jobs</button>
+        <button class="chat-suggestion" data-prompt="What are people talking about AI or tech?">AI/Tech posts</button>
+      </div>
+      <div class="chat-input-row">
+        <textarea id="chatInput" class="chat-input" rows="2" placeholder="Ask about your posts..."></textarea>
+        <button id="chatSend" class="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Use Railway URL in production, localhost for development
+    const API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:8000'
+      : 'https://feedfilter-production.up.railway.app';
+    let currentOffset = 0;
+    let currentFilter = 'all';
+    let currentSearch = '';
+    let isLoading = false;
+    let allPostsText = ''; // Cache for chat context
+
+    const postsGrid = document.getElementById('postsGrid');
+    const searchInput = document.getElementById('searchInput');
+    const allBtn = document.getElementById('allBtn');
+    const bookmarkedBtn = document.getElementById('bookmarkedBtn');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const errorBanner = document.getElementById('errorBanner');
+
+    // Chat elements
+    const chatBtn = document.getElementById('chatBtn');
+    const chatPanel = document.getElementById('chatPanel');
+    const chatClose = document.getElementById('chatClose');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSend = document.getElementById('chatSend');
+    const chatSuggestions = document.querySelectorAll('.chat-suggestion');
+
+    // Load stats
+    async function loadStats() {
+      try {
+        const response = await fetch(`${API_URL}/stats`);
+        const stats = await response.json();
+        document.getElementById('totalPosts').textContent = stats.posts;
+        document.getElementById('bookmarkedCount').textContent = stats.bookmarked;
+        document.getElementById('processingCount').textContent = stats.processing;
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    // Load posts
+    async function loadPosts(reset = false) {
+      if (isLoading) return;
+      isLoading = true;
+
+      if (reset) {
+        currentOffset = 0;
+        postsGrid.innerHTML = '<div class="loading">Loading posts...</div>';
+      }
+
+      try {
+        let url = `${API_URL}/posts?limit=20&offset=${currentOffset}`;
+
+        if (currentSearch) {
+          url += `&search=${encodeURIComponent(currentSearch)}`;
+        }
+
+        if (currentFilter === 'bookmarked') {
+          url += '&bookmarked=true';
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (reset) {
+          postsGrid.innerHTML = '';
+        }
+
+        if (data.posts.length === 0 && currentOffset === 0) {
+          postsGrid.innerHTML = `
+            <div class="empty-state">
+              <h2>No posts found</h2>
+              <p>Record your LinkedIn feed to see posts here</p>
+            </div>
+          `;
+          loadMoreBtn.style.display = 'none';
+        } else {
+          data.posts.forEach(post => renderPost(post));
+          currentOffset += data.posts.length;
+          loadMoreBtn.style.display = data.posts.length === 20 ? 'block' : 'none';
+        }
+
+        errorBanner.classList.remove('active');
+      } catch (error) {
+        console.error('Failed to load posts:', error);
+        errorBanner.textContent = `Failed to connect to backend: ${error.message}`;
+        errorBanner.classList.add('active');
+        postsGrid.innerHTML = `
+          <div class="empty-state">
+            <h2>Connection Error</h2>
+            <p>Make sure the backend is running: python main.py</p>
+          </div>
+        `;
+      }
+
+      isLoading = false;
+    }
+
+    // Render a single post
+    function renderPost(post) {
+      const card = document.createElement('div');
+      card.className = 'post-card';
+      card.dataset.id = post.id;
+
+      // Extract filename from path
+      const pathParts = post.frame_path.split('/');
+      const recordingId = pathParts[pathParts.length - 2];
+      const frameName = pathParts[pathParts.length - 1];
+      const imageUrl = `${API_URL}/frame/${recordingId}/${frameName}`;
+
+      const date = new Date(post.extracted_at).toLocaleDateString();
+      const text = post.ocr_text || '(No text extracted)';
+
+      card.innerHTML = `
+        <img class="post-image" src="${imageUrl}" alt="Post screenshot" loading="lazy">
+        <div class="post-content">
+          <div class="post-text">${escapeHtml(text.substring(0, 500))}${text.length > 500 ? '...' : ''}</div>
+          <div class="post-meta">
+            <span>${date}</span>
+            <div class="post-actions">
+              <button class="bookmark-btn ${post.bookmarked ? 'bookmarked' : ''}" data-id="${post.id}">
+                ${post.bookmarked ? '★ Saved' : '☆ Save'}
+              </button>
+              <button class="delete-btn" data-id="${post.id}">Delete</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      postsGrid.appendChild(card);
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Toggle bookmark
+    async function toggleBookmark(postId) {
+      try {
+        const response = await fetch(`${API_URL}/posts/${postId}/bookmark`, { method: 'POST' });
+        const data = await response.json();
+
+        const btn = document.querySelector(`.bookmark-btn[data-id="${postId}"]`);
+        if (btn) {
+          btn.classList.toggle('bookmarked', data.bookmarked);
+          btn.textContent = data.bookmarked ? '★ Saved' : '☆ Save';
+        }
+
+        loadStats();
+      } catch (error) {
+        console.error('Failed to toggle bookmark:', error);
+      }
+    }
+
+    // Delete post
+    async function deletePost(postId) {
+      if (!confirm('Delete this post?')) return;
+
+      try {
+        await fetch(`${API_URL}/posts/${postId}`, { method: 'DELETE' });
+        const card = document.querySelector(`.post-card[data-id="${postId}"]`);
+        if (card) card.remove();
+        loadStats();
+      } catch (error) {
+        console.error('Failed to delete post:', error);
+      }
+    }
+
+    // ==================== Chat Functions ====================
+
+    function openChat() {
+      chatPanel.classList.add('active');
+      document.body.classList.add('chat-open');
+      loadPostsForChat();
+    }
+
+    function closeChat() {
+      chatPanel.classList.remove('active');
+      document.body.classList.remove('chat-open');
+    }
+
+    async function loadPostsForChat() {
+      if (allPostsText) return; // Already loaded
+
+      try {
+        const response = await fetch(`${API_URL}/posts?limit=100`);
+        const data = await response.json();
+
+        if (data.posts.length > 0) {
+          allPostsText = data.posts
+            .filter(p => p.ocr_text && p.ocr_text.trim())
+            .map((p, i) => `[Post ${i + 1}]:\n${p.ocr_text.substring(0, 800)}`)
+            .join('\n\n---\n\n');
+
+          addChatMessage('system', `Loaded ${data.posts.length} posts. Ask me anything!`);
+        } else {
+          addChatMessage('system', 'No posts found. Record some LinkedIn content first.');
+        }
+      } catch (error) {
+        addChatMessage('error', 'Failed to load posts for chat.');
+      }
+    }
+
+    function addChatMessage(type, content) {
+      const msg = document.createElement('div');
+      msg.className = `chat-message ${type}`;
+      msg.textContent = content;
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return msg;
+    }
+
+    async function sendChatMessage(userQuery) {
+      if (!userQuery.trim()) return;
+
+      addChatMessage('user', userQuery);
+      chatInput.value = '';
+
+      const loadingMsg = addChatMessage('assistant', 'Thinking...');
+
+      chatSend.disabled = true;
+      chatInput.disabled = true;
+
+      try {
+        const response = await fetch(`${API_URL}/chat/posts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            posts_content: allPostsText,
+            question: userQuery
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || 'Chat failed');
+        }
+
+        const data = await response.json();
+        loadingMsg.textContent = data.answer || 'No response';
+      } catch (error) {
+        loadingMsg.className = 'chat-message error';
+        loadingMsg.textContent = `Error: ${error.message}`;
+      }
+
+      chatSend.disabled = false;
+      chatInput.disabled = false;
+      chatInput.focus();
+    }
+
+    // ==================== Event Listeners ====================
+
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        currentSearch = searchInput.value;
+        loadPosts(true);
+      }
+    });
+
+    allBtn.addEventListener('click', () => {
+      currentFilter = 'all';
+      allBtn.classList.add('active');
+      bookmarkedBtn.classList.remove('active');
+      currentSearch = '';
+      searchInput.value = '';
+      loadPosts(true);
+    });
+
+    bookmarkedBtn.addEventListener('click', () => {
+      currentFilter = 'bookmarked';
+      bookmarkedBtn.classList.add('active');
+      allBtn.classList.remove('active');
+      loadPosts(true);
+    });
+
+    loadMoreBtn.addEventListener('click', () => loadPosts(false));
+
+    // Post actions (delegation)
+    postsGrid.addEventListener('click', (e) => {
+      if (e.target.classList.contains('bookmark-btn')) {
+        toggleBookmark(e.target.dataset.id);
+      } else if (e.target.classList.contains('delete-btn')) {
+        deletePost(e.target.dataset.id);
+      } else if (e.target.classList.contains('post-image')) {
+        modalImage.src = e.target.src;
+        imageModal.classList.add('active');
+      }
+    });
+
+    // Modal close
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal || e.target.classList.contains('modal-close')) {
+        imageModal.classList.remove('active');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        imageModal.classList.remove('active');
+        closeChat();
+      }
+    });
+
+    // Chat events
+    chatBtn.addEventListener('click', openChat);
+    chatClose.addEventListener('click', closeChat);
+
+    chatSend.addEventListener('click', () => sendChatMessage(chatInput.value));
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage(chatInput.value);
+      }
+    });
+
+    chatSuggestions.forEach(btn => {
+      btn.addEventListener('click', () => {
+        sendChatMessage(btn.dataset.prompt);
+      });
+    });
+
+    // Initial load
+    loadStats();
+    loadPosts(true);
+
+    // Auto-refresh stats every 30 seconds
+    setInterval(loadStats, 30000);
+  </script>
+</body>
+</html>
